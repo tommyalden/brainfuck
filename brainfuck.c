@@ -60,19 +60,60 @@ int loadFile(const char *filename, char **program) {
     return 0;
 }
 
+int loadStdin(char **program) {
+    size_t capacity = 1024;
+    size_t length = 0;
+    
+    char *buffer = malloc(capacity);
+    if (!buffer) return -1;
+
+    char c = 0;
+    while (c != EOF) {
+        c = getchar();
+
+        if (length + 1 >= capacity) {
+            capacity *= 2;
+            char *newBuffer = realloc(buffer, capacity);
+
+            if(!newBuffer) {
+                free(buffer);
+                return -1;
+            }
+
+            buffer = newBuffer;
+        }
+
+        buffer[length++] = c;
+    }
+
+    buffer[length]= '\0';
+    *program = buffer;
+
+    return 0;
+}
+
 int main(int argc, char **argv) {
-    if (argc != 2) {
+    if (argc > 2) {
         fprintf(stderr, "Usage: %s <file.bf>\n", argv[0]);
         return 0;
     }
 
     char *program = NULL;
 
-    // If -1, loadFile failed
-    if(loadFile(argv[1], &program) == -1) {
-        perror("Error loading file");
-        return 1;
+    if (argc == 2) {
+        // If -1, loadFile failed
+        if(loadFile(argv[1], &program) == -1) {
+            perror("Error loading file");
+            return 1;
+        }
+    } else {
+        if(loadStdin(&program) == -1) {
+            perror("Error reading from stdin\n");
+            return 1;
+        }
     }
+
+    if (!program) return 1;
 
     // Initialise tape to zeroes, alongside the other pointers
     unsigned char tape[TAPE_SIZE] = { 0 };
